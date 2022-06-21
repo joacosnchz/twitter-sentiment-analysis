@@ -60,7 +60,8 @@ if __name__ == "__main__":
     since_id = read_since()
         
     query = sys.argv[1]
-    querystring = '?q=' + query + '&result_type=popular&count=100&tweet_mode=extended'
+    # Extended mode is needed in order to download tweets without being truncated
+    querystring = '?q=' + query + '&result_type=recent&count=100&tweet_mode=extended&lang=en'
 
     print('Downloading first page of tweets..')
     tweets = send_request(querystring + '&since_id=' + since_id, token)
