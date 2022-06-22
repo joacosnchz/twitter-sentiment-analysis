@@ -15,18 +15,22 @@ def unescape_string(escaped):
     return html.unescape(escaped)
 unescape_udf = F.udf(unescape_string)
 
-splitted = raw_data.withColumn('words', F.explode(F.split('full_text', ' ')))
-nohashes = splitted.where(splitted.words.startswith('#') == False)
-nolinks = nohashes.where(nohashes.words.startswith('http:') == False)
-noslinks = nolinks.where(nolinks.words.startswith('https:') == False)
-wtime = noslinks.withColumn('timestamp', F.current_timestamp())
-grouped = wtime.withWatermark('timestamp', '5 seconds').groupBy('id', 'timestamp').agg(F.concat_ws(',', F.collect_list(wtime.words)).alias('full_text'))
-concatted = grouped.select('id', 'timestamp', F.regexp_replace('full_text', ',', ' ').alias('full_text'))
-decoded = concatted.select('id', 'timestamp', unescape_udf('full_text').alias('full_text'))
-alphanum = decoded.withColumn('full_text', F.regexp_replace('full_text', '[^A-Za-z0-9 ]+', '').alias('full_text'))
-lowerc = alphanum.select('id','timestamp', F.lower('full_text').alias('full_text'))
+splitted = raw_data.withColumn('words', F.explode(F.split('full_text', ' '))) \
+    .withColumn('timestamp', F.current_timestamp())
+filtered = splitted.where(splitted.words.startswith('#') == False) \
+    .where(splitted.words.startswith('@') == False) \
+    .where(splitted.words.startswith('http:') == False) \
+    .where(splitted.words.startswith('https:') == False) \
+    .where(splitted.words != 'RT')
+grouped = filtered.withWatermark('timestamp', '5 seconds') \
+    .groupBy('id', 'timestamp') \
+    .agg(F.concat_ws(',', F.collect_list(filtered.words)).alias('full_text')) \
+    .select('id', 'timestamp', F.regexp_replace('full_text', ',', ' ').alias('full_text'))
+cleaned = grouped.withColumn('full_text', unescape_udf('full_text')) \
+    .withColumn('full_text', F.regexp_replace('full_text', '[^A-Za-z0-9 ]+', '')) \
+    .withColumn('full_text', F.lower('full_text'))
 
-streamingQuery = lowerc.writeStream \
+streamingQuery = cleaned.writeStream \
     .format("csv") \
     .outputMode("append") \
     .trigger(processingTime='10 seconds') \

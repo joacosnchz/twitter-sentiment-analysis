@@ -78,4 +78,3 @@ if __name__ == "__main__":
 
         print('Downloading tweets since %s' % since_id)
         tweets = send_request(querystring + '&since_id=' + since_id, token)
-        break
