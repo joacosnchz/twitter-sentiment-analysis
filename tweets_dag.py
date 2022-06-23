@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
+from airflow.models import Variable
 
 with DAG(
     'twitter_sentiment_analysis',
@@ -33,10 +34,11 @@ with DAG(
     tags=['tweets'],
 ) as dag:
 
+    arg = Variable.get("twitter_sentiment_analysis_download_tweets_arg")
     t1 = BashOperator(
         task_id='download_tweets',
         depends_on_past=False,
-        bash_command='python3 ~/Projects/twitter-sentiment/download_data.py nasa'
+        bash_command='python3 ~/Projects/twitter-sentiment/download_data.py ' + arg
     )
 
     t1

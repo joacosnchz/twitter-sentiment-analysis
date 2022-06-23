@@ -22,7 +22,7 @@ filtered = splitted.where(splitted.words.startswith('#') == False) \
     .where(splitted.words.startswith('http:') == False) \
     .where(splitted.words.startswith('https:') == False) \
     .where(splitted.words != 'RT')
-grouped = filtered.withWatermark('timestamp', '5 seconds') \
+grouped = filtered.withWatermark('timestamp', '50 seconds') \
     .groupBy('id', 'timestamp') \
     .agg(F.concat_ws(',', F.collect_list(filtered.words)).alias('full_text')) \
     .select('id', 'timestamp', F.regexp_replace('full_text', ',', ' ').alias('full_text'))
@@ -33,10 +33,9 @@ cleaned = grouped.withColumn('full_text', unescape_udf('full_text')) \
 streamingQuery = cleaned.writeStream \
     .format("csv") \
     .outputMode("append") \
-    .trigger(processingTime='10 seconds') \
+    .trigger(processingTime='55 seconds') \
     .option("checkpointLocation", os.environ['HOME'] + '/Projects/twitter-sentiment/checkpoint') \
-    .start(os.environ['HOME'] + '/Projects/twitter-sentiment/processed')
-
-streamingQuery.awaitTermination()
+    .start(os.environ['HOME'] + '/Projects/twitter-sentiment/processed') \
+    .awaitTermination()
 
 spark.stop()
