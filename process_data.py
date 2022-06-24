@@ -15,13 +15,14 @@ def unescape_string(escaped):
     return html.unescape(escaped)
 unescape_udf = F.udf(unescape_string)
 
-splitted = raw_data.withColumn('words', F.explode(F.split('full_text', ' '))) \
+duplicates = raw_data.where(raw_data.full_text.startswith('RT') == False) \
+    .dropDuplicates(['id'])
+splitted = duplicates.withColumn('words', F.explode(F.split('full_text', ' '))) \
     .withColumn('timestamp', F.current_timestamp())
 filtered = splitted.where(splitted.words.startswith('#') == False) \
     .where(splitted.words.startswith('@') == False) \
     .where(splitted.words.startswith('http:') == False) \
-    .where(splitted.words.startswith('https:') == False) \
-    .where(splitted.words != 'RT')
+    .where(splitted.words.startswith('https:') == False)
 grouped = filtered.withWatermark('timestamp', '50 seconds') \
     .groupBy('id', 'timestamp') \
     .agg(F.concat_ws(',', F.collect_list(filtered.words)).alias('full_text')) \
