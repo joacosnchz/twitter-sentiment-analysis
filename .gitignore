@@ -4,3 +4,4 @@ since_id.txt
 *.ipynb
 stderr
 stdout
+*__pycache__

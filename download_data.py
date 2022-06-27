@@ -1,43 +1,37 @@
 import os
-import sys
+import logging
 import requests
 import json
 from time import sleep
 from datetime import datetime
 
+log = logging.getLogger('airflow.task')
+
 # Read Twitter API Token
 def read_token():
-    token = ''
-    try:
-        f = open(os.environ['HOME'] + '/Projects/twitter-sentiment/token.txt', 'r')
-        token = f.read()
-        f.close()
-    except FileNotFoundError:
-        exit('Please create a token.txt file with the Twitter API Token')
+    f = open('token.txt', 'r')
+    token = f.read()
+    f.close()
 
     return token
 
 # Read last tweet ID
 def read_since():
-    since_id = ''
-    try:
-        since = open(os.environ['HOME'] + '/Projects/twitter-sentiment/since_id.txt', 'r')
-        since_id = since.read()
-        since.close()
-    except FileNotFoundError:
-        print('ID of last tweet read not found: Starting from the beginning')
+    since = open('since_id.txt', 'r')
+    since_id = since.read()
+    since.close()
 
     return since_id
 
 # Save last downloaded tweet ID
 def store_since(since_id):
-    since = open(os.environ['HOME'] + '/Projects/twitter-sentiment/since_id.txt', 'w')
+    since = open('since_id.txt', 'w')
     since.write(since_id)
     since.close()
 
 # Save tweets to json file with datetime format
 def store_file(tweets):
-    with open(os.environ['HOME'] + '/Projects/twitter-sentiment/data/tweets-' + datetime.now().strftime("%Y%m%d%H%M%S") + '.json', 'w') as f:
+    with open('data/tweets-' + datetime.now().strftime("%Y%m%d%H%M%S") + '.json', 'w') as f:
         f.write(json.dumps(tweets['statuses']))
 
 # Send tweets data request to Twitter API
@@ -52,18 +46,19 @@ def send_request(querystring, token):
     
     return r.json()
 
-if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        exit('Missing first argument')
+def download(query, cwd):
+    if str(query).strip() == '':
+        raise Exception('Missing query argument')
+
+    os.chdir(cwd)
 
     token = read_token()
     since_id = read_since()
-        
-    query = sys.argv[1]
+    
     # Extended mode is needed in order to download tweets without being truncated
     querystring = '?q=' + query + '&result_type=recent&count=100&tweet_mode=extended&lang=en'
 
-    print('Downloading first page of tweets..')
+    log.info('Downloading first page of tweets..')
     tweets = send_request(querystring + '&since_id=' + since_id, token)
 
     while len(tweets['statuses']) > 0:
@@ -76,5 +71,8 @@ if __name__ == "__main__":
         # Sleep a bit just to avoid being blocked by twitter
         sleep(0.3)
 
-        print('Downloading tweets since %s' % since_id)
+        log.info('Downloading tweets since %s' % since_id)
         tweets = send_request(querystring + '&since_id=' + since_id, token)
+        break
+
+    log.info('Tweets download finished')
