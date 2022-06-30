@@ -50,7 +50,8 @@ cleaned = grouped.select('full_text') \
     .withColumn('full_text', F.lower('full_text')) \
     .withColumn('target', label_data_udf('full_text'))
 
-streamingQuery = cleaned.writeStream \
+streamingQuery = cleaned.coalesce(1) \
+    .writeStream \
     .format("parquet") \
     .outputMode("append") \
     .trigger(processingTime='55 seconds') \

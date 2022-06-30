@@ -1,8 +1,8 @@
 import os
 from datetime import datetime, timedelta
-from airflow.models import Variable
 from airflow.decorators import dag, task
-from twitter_sentiment.download_data import download
+from download_data import download
+from dw_scraper import search
 
 default_args = {
     'depends_on_past': False,
@@ -36,11 +36,13 @@ def twitter_sentiment_analysis():
 
     @task()
     def download_tweets(query):
-        download(query, os.environ['HOME'] + '/airflow/dags/twitter_sentiment')
+        download(query, os.environ['HOME'] + '/Projects/twitter-sentiment')
 
-    arg = Variable.get("twitter_sentiment_analysis_download_tweets_arg")
-    t1 = download_tweets(arg)
+    @task()
+    def search_dw():
+        return search()
 
-    t1
+    t1 = search_dw()
+    t2 = download_tweets(t1)
 
 tweets = twitter_sentiment_analysis()

@@ -1,6 +1,5 @@
 .ipynb_checkpoints
 token.txt
-since_id.txt
 *.ipynb
 stderr
 stdout
