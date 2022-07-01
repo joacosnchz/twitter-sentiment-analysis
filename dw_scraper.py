@@ -17,12 +17,8 @@ def search():
 
         words = featured_article.string.split()
 
-        if len(words) >= 2:
-            search = ' '.join(words[:3])
-        else:
-            search = ' '.join(words)
-
-        search = re.sub('[^A-Za-z0-9 ]+', '', search.lower())
+        if len(words) > 0:
+            search = re.sub('[^A-Za-z0-9 ]+', '', words[0].lower())
 
         log.info('Main topic found is: %s' % search)
 

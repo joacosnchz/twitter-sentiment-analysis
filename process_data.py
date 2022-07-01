@@ -10,7 +10,7 @@ sentiment = SentimentIntensityAnalyzer()
 
 spark = SparkSession.builder.appName('TwitterSentiment').getOrCreate()
 
-schema = "id LONG, full_text STRING"
+schema = "id LONG, created_at STRING, full_text STRING"
 raw_data = spark.readStream \
     .schema(schema) \
     .json('data/tweets-*.json')
@@ -32,18 +32,16 @@ def label_data(text):
         return 0
 label_data_udf = F.udf(label_data, returnType='INTEGER')
 
-duplicates = raw_data.where(raw_data.full_text.startswith('RT') == False) \
-    .dropDuplicates(['id'])
+duplicates = raw_data.where(raw_data.full_text.startswith('RT') == False)
 splitted = duplicates.withColumn('words', F.explode(F.split('full_text', ' '))) \
-    .withColumn('timestamp', F.current_timestamp())
+    .withColumn('timestamp', F.to_timestamp(raw_data.created_at.substr(5,28), 'MMM dd HH:mm:ss xxxx yyyy'))
 filtered = splitted.where(splitted.words.startswith('#') == False) \
     .where(splitted.words.startswith('@') == False) \
     .where(splitted.words.startswith('http:') == False) \
     .where(splitted.words.startswith('https:') == False)
 grouped = filtered.withWatermark('timestamp', '50 seconds') \
     .groupBy('id', 'timestamp') \
-    .agg(F.concat_ws(',', F.collect_list(filtered.words)).alias('full_text')) \
-    .select('id', 'timestamp', F.regexp_replace('full_text', ',', ' ').alias('full_text'))
+    .agg(F.concat_ws(' ', F.collect_list(filtered.words)).alias('full_text'))
 cleaned = grouped.select('full_text') \
     .withColumn('full_text', unescape_udf('full_text')) \
     .withColumn('full_text', F.regexp_replace('full_text', '[^A-Za-z0-9 ]+', '')) \
@@ -52,7 +50,7 @@ cleaned = grouped.select('full_text') \
 
 streamingQuery = cleaned.coalesce(1) \
     .writeStream \
-    .format("parquet") \
+    .format("csv") \
     .outputMode("append") \
     .trigger(processingTime='55 seconds') \
     .option("checkpointLocation", os.environ['HOME'] + '/Projects/twitter-sentiment/checkpoint') \

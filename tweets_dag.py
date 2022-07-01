@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from download_data import download
-from dw_scraper import search
+from dw_scraper import search as search_dw
+from debug_scraper import search as search_debug
 
 default_args = {
     'depends_on_past': False,
@@ -39,10 +40,17 @@ def twitter_sentiment_analysis():
         download(query, os.environ['HOME'] + '/Projects/twitter-sentiment')
 
     @task()
-    def search_dw():
-        return search()
+    def search_dw_t():
+        return search_dw()
 
-    t1 = search_dw()
+    @task()
+    def search_debug_t():
+        return search_debug()
+
+    t1 = search_dw_t()
     t2 = download_tweets(t1)
+
+    t3 = search_debug_t()
+    t4 = download_tweets(t3)
 
 tweets = twitter_sentiment_analysis()
