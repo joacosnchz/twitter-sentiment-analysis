@@ -2,9 +2,6 @@ import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.providers.docker.operators.docker import DockerOperator
-from download_data import download
-from dw_scraper import search as search_dw
-from debug_scraper import search as search_debug
 
 default_args = {
     'depends_on_past': False,
