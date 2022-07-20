@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
+from airflow.providers.docker.operators.docker import DockerOperator
 from download_data import download
 from dw_scraper import search as search_dw
 from debug_scraper import search as search_debug
@@ -35,22 +36,12 @@ default_args = {
 )
 def twitter_sentiment_analysis():
 
-    @task()
-    def download_tweets(query):
-        download(query, os.environ['HOME'] + '/Projects/twitter-sentiment')
-
-    @task()
-    def search_dw_t():
-        return search_dw()
-
-    @task()
-    def search_debug_t():
-        return search_debug()
-
-    t1 = search_dw_t()
-    t2 = download_tweets(t1)
-
-    t3 = search_debug_t()
-    t4 = download_tweets(t3)
+    t1 = DockerOperator(
+        task_id='search_dw', 
+        image='scraping:latest', 
+        environment={"URLS": "https://www.dw.com/en", "TO_FILE_FOLDER": "/shared"},
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge'
+    )
 
 tweets = twitter_sentiment_analysis()
