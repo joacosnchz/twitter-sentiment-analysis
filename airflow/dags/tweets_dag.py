@@ -35,7 +35,7 @@ def twitter_sentiment_analysis():
 
     t1 = DockerOperator(
         task_id='search_dw', 
-        image='scraping:latest', 
+        image='twitter-sentiment_scraping:latest', 
         environment={"URLS": "https://www.dw.com/en", "TO_FILE_FOLDER": "/shared"},
         docker_url='unix://var/run/docker.sock',
         network_mode='bridge'
