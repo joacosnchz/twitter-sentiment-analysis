@@ -7,10 +7,17 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    env_file: ./airflow/.env
   scraping:
     build:
       context: ./scraping
     volumes:
       - myapp:/shared
+  downloader:
+    build:
+      context: ./downloader
+    volumes:
+      - myapp:/shared
+    env_file: ./downloader/.env
 volumes:
-  myapp: 
+  myapp:

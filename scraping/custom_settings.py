@@ -6,9 +6,9 @@ DOWNLOADER_MIDDLEWARES = {
     'scraping.proxy_middleware.CustomProxyMiddleware': 350
 }
 
-# ITEM_PIPELINES = {
-#     'scraping.file_pipeline.FilePipeline': 350
-# }
+ITEM_PIPELINES = {
+    'scraping.file_pipeline.FilePipeline': 350
+}
 
 AUTOTHROTTLE_ENABLED = True
 

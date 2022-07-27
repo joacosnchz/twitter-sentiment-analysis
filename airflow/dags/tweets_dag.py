@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
 
 default_args = {
     'depends_on_past': False,
@@ -24,6 +25,8 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 
+volume = Mount(target='/shared', source='myapp')
+
 @dag(
     default_args=default_args,
     schedule_interval='* * * * *',
@@ -38,7 +41,19 @@ def twitter_sentiment_analysis():
         image='twitter-sentiment_scraping:latest', 
         environment={"URLS": "https://www.dw.com/en", "TO_FILE_FOLDER": "/shared"},
         docker_url='unix://var/run/docker.sock',
-        network_mode='bridge'
+        network_mode='bridge',
+        mounts=[volume]
     )
+
+    t2 = DockerOperator(
+        task_id='download_data', 
+        image='twitter-sentiment_downloader:latest', 
+        private_environment={"TW_TOKEN": os.getenv('TW_TOKEN', '')},
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        mounts=[volume]
+    )
+
+    t1 >> t2
 
 tweets = twitter_sentiment_analysis()

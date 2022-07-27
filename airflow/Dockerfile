@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 RUN apt-get update \
-    && apt-get -y install vim nano
+    && apt-get -y install vim
 
 EXPOSE 8080
 

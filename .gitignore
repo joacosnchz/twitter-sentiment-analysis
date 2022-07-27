@@ -1,5 +1,5 @@
 .ipynb_checkpoints
-token.txt
+.env
 *.ipynb
 stderr
 stdout
