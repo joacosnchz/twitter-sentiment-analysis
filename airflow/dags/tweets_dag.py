@@ -54,6 +54,14 @@ def twitter_sentiment_analysis():
         mounts=[volume]
     )
 
-    t1 >> t2
+    t3 = DockerOperator(
+        task_id='process_data', 
+        image='twitter-sentiment_spark:latest',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        mounts=[volume]
+    )
+
+    t1 >> t2 >> t3
 
 tweets = twitter_sentiment_analysis()
