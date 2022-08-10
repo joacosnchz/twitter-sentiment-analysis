@@ -74,6 +74,5 @@ if __name__ == "__main__":
 
         log.info('Downloading tweets since %s' % since_id)
         tweets = send_request(querystring + '&since_id=' + since_id)
-        break
 
     log.info('Tweets download finished')

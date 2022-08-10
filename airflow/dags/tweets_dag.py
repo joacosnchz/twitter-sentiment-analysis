@@ -58,7 +58,7 @@ def twitter_sentiment_analysis():
         task_id='process_data', 
         image='twitter-sentiment_spark:latest',
         docker_url='unix://var/run/docker.sock',
-        network_mode='bridge',
+        network_mode='host',
         mounts=[volume]
     )
 

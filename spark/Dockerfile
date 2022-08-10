@@ -25,4 +25,4 @@ RUN pip install -r requirements.txt
 
 COPY process_data.py .
 
-ENTRYPOINT ["spark-submit", "--packages", "org.mongodb.spark:mongo-spark-connector:10.0.2", "process_data.py"]
+ENTRYPOINT ["spark-submit", "--packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.2", "process_data.py"]
