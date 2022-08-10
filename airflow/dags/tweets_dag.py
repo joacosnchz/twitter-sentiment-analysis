@@ -57,6 +57,7 @@ def twitter_sentiment_analysis():
     t3 = DockerOperator(
         task_id='process_data', 
         image='twitter-sentiment_spark:latest',
+        private_environment={"MONGO_URI": os.getenv('MONGO_URI', '')},
         docker_url='unix://var/run/docker.sock',
         network_mode='host',
         mounts=[volume]

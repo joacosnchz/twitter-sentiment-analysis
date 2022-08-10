@@ -9,7 +9,7 @@ nltk.download('vader_lexicon')
 sentiment = SentimentIntensityAnalyzer()
 
 spark = SparkSession.builder \
-    .config("spark.mongodb.output.uri", "mongodb://root:example@localhost/people?authSource=admin") \
+    .config("spark.mongodb.output.uri", os.getenv('MONGO_URI') + "people?authSource=admin") \
     .appName('TwitterSentiment') \
     .getOrCreate()
     
@@ -46,6 +46,7 @@ grouped = filtered.withWatermark('timestamp', '50 seconds') \
     .groupBy('id', 'timestamp') \
     .agg(F.concat_ws(' ', F.collect_list(filtered.words)).alias('full_text'))
 cleaned = grouped.select('id', 'full_text') \
+    .withColumnRenamed('id', '_id') \
     .withColumn('full_text', unescape_udf('full_text')) \
     .withColumn('full_text', F.regexp_replace('full_text', '[^A-Za-z0-9 ]+', '')) \
     .withColumn('full_text', F.lower('full_text')) \
