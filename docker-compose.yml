@@ -1,27 +1,23 @@
 version: '3'
 services:
   airflow:
-    build: 
-      context: ./airflow
+    build: ./airflow
     ports:
       - "8082:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     env_file: ./airflow/.env
   scraping:
-    build:
-      context: ./scraping
+    build: ./scraping
     volumes:
       - myapp:/shared
   downloader:
-    build:
-      context: ./downloader
+    build: ./downloader
     volumes:
       - myapp:/shared
     env_file: ./downloader/.env
   spark:
-    build:
-      context: ./spark
+    build: ./spark
     volumes:
       - myapp:/shared
   mongo:

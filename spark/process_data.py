@@ -9,7 +9,7 @@ nltk.download('vader_lexicon')
 sentiment = SentimentIntensityAnalyzer()
 
 spark = SparkSession.builder \
-    .config("spark.mongodb.output.uri", os.getenv('MONGO_URI') + "people?authSource=admin") \
+    .config("spark.mongodb.output.uri", os.getenv('MONGO_URI') + "sentiment?authSource=admin") \
     .appName('TwitterSentiment') \
     .getOrCreate()
     
@@ -53,7 +53,7 @@ cleaned = grouped.select('id', 'full_text') \
     .withColumn('target', label_data_udf('full_text'))
 
 cleaned.write.format("mongo") \
-    .option("collection", "contacts") \
+    .option("collection", "tweets") \
     .mode("append") \
     .save()
 
