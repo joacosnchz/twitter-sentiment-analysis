@@ -1,9 +1,8 @@
 import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
-from download_data import download
-from dw_scraper import search as search_dw
-from debug_scraper import search as search_debug
+from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
 
 default_args = {
     'depends_on_past': False,
@@ -26,6 +25,8 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 
+volume = Mount(target='/shared', source='myapp')
+
 @dag(
     default_args=default_args,
     schedule_interval='* * * * *',
@@ -35,22 +36,32 @@ default_args = {
 )
 def twitter_sentiment_analysis():
 
-    @task()
-    def download_tweets(query):
-        download(query, os.environ['HOME'] + '/Projects/twitter-sentiment')
+    t1 = DockerOperator(
+        task_id='search_dw', 
+        image='twitter-sentiment_scraping:latest', 
+        environment={"URLS": "https://www.dw.com/en", "TO_FILE_FOLDER": "/shared"},
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        mounts=[volume]
+    )
 
-    @task()
-    def search_dw_t():
-        return search_dw()
+    t2 = DockerOperator(
+        task_id='download_data', 
+        image='twitter-sentiment_downloader:latest', 
+        private_environment={"TW_TOKEN": os.getenv('TW_TOKEN', '')},
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        mounts=[volume]
+    )
 
-    @task()
-    def search_debug_t():
-        return search_debug()
+    t3 = DockerOperator(
+        task_id='process_data', 
+        image='twitter-sentiment_spark:latest',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='host',
+        mounts=[volume]
+    )
 
-    t1 = search_dw_t()
-    t2 = download_tweets(t1)
-
-    t3 = search_debug_t()
-    t4 = download_tweets(t3)
+    t1 >> t2 >> t3
 
 tweets = twitter_sentiment_analysis()

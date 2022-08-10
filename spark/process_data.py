@@ -8,12 +8,15 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 nltk.download('vader_lexicon')
 sentiment = SentimentIntensityAnalyzer()
 
-spark = SparkSession.builder.appName('TwitterSentiment').getOrCreate()
-
+spark = SparkSession.builder \
+    .config("spark.mongodb.output.uri", "mongodb://root:example@localhost/people?authSource=admin") \
+    .appName('TwitterSentiment') \
+    .getOrCreate()
+    
 schema = "id LONG, created_at STRING, full_text STRING"
-raw_data = spark.readStream \
+raw_data = spark.read \
     .schema(schema) \
-    .json('data/tweets-*.json')
+    .json('/shared/tweets_*.json')
 
 # UDF aimed to remove html escaped characters
 def unescape_string(escaped):
@@ -42,19 +45,15 @@ filtered = splitted.where(splitted.words.startswith('#') == False) \
 grouped = filtered.withWatermark('timestamp', '50 seconds') \
     .groupBy('id', 'timestamp') \
     .agg(F.concat_ws(' ', F.collect_list(filtered.words)).alias('full_text'))
-cleaned = grouped.select('full_text') \
+cleaned = grouped.select('id', 'full_text') \
     .withColumn('full_text', unescape_udf('full_text')) \
     .withColumn('full_text', F.regexp_replace('full_text', '[^A-Za-z0-9 ]+', '')) \
     .withColumn('full_text', F.lower('full_text')) \
     .withColumn('target', label_data_udf('full_text'))
 
-streamingQuery = cleaned.coalesce(1) \
-    .writeStream \
-    .format("csv") \
-    .outputMode("append") \
-    .trigger(processingTime='55 seconds') \
-    .option("checkpointLocation", os.environ['HOME'] + '/Projects/twitter-sentiment/checkpoint') \
-    .start(os.environ['HOME'] + '/Projects/twitter-sentiment/processed') \
-    .awaitTermination()
+cleaned.write.format("mongo") \
+    .option("collection", "contacts") \
+    .mode("append") \
+    .save()
 
 spark.stop()
